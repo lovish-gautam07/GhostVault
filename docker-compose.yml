@@ -1,0 +1,53 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: ghostvault-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ghostvault
+      POSTGRES_PASSWORD: ghostvault_secret_password
+      POSTGRES_DB: ghostvault
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: ghostvault-backend
+    restart: unless-stopped
+    ports:
+      - "3001:3001"
+    environment:
+      NODE_ENV: production
+      PORT: 3001
+      DATABASE_URL: "postgresql://ghostvault:ghostvault_secret_password@postgres:5432/ghostvault?schema=public"
+      JWT_SECRET: "development-jwt-super-secret-key-min-32-chars-long"
+      FRONTEND_URL: "http://localhost:3000"
+      SMTP_HOST: "smtp.ethereal.email"
+      SMTP_PORT: 587
+      SMTP_SECURE: "false"
+      EMAIL_FROM: "GhostVault <noreply@ghostvault.com>"
+    depends_on:
+      - postgres
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: ghostvault-frontend
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      NODE_ENV: production
+      NEXT_PUBLIC_API_URL: "http://localhost:3001/api"
+    depends_on:
+      - backend
+
+volumes:
+  postgres_data:
