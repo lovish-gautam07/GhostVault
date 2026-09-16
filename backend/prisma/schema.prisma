@@ -1,0 +1,111 @@
+// Prisma schema for GhostVault
+// Switch provider to "postgresql" for production
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  password  String   // bcrypt hashed
+  name      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Last check-in timestamp
+  lastCheckinAt DateTime @default(now())
+
+  // User's encryption key hint (optional, for password recovery help)
+  keyHint   String?
+
+  vaultItems      VaultItem[]
+  trustedContacts TrustedContact[]
+  checkIns        CheckIn[]
+  releases        Release[]
+}
+
+model VaultItem {
+  id          String   @id @default(uuid())
+  userId      String
+  title       String
+  type        String   // "note", "password", "document"
+
+  // Encrypted data (AES-256 encrypted on client before upload)
+  encryptedData String   // Stored as base64 string
+
+  // IV (Initialization Vector) for AES encryption
+  iv          String
+
+  // Release tier in days (e.g., 7, 30, 90)
+  releaseTier Int      @default(30)
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user            User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  contactAssignments VaultItemContact[]
+  releases        Release[]
+}
+
+model TrustedContact {
+  id        String   @id @default(uuid())
+  userId    String
+  name      String
+  email     String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  vaultItems VaultItemContact[]
+  releases   Release[]
+
+  @@unique([userId, email])
+}
+
+// Junction table: which contacts get which vault items
+model VaultItemContact {
+  id            String   @id @default(uuid())
+  vaultItemId   String
+  contactId     String
+  createdAt     DateTime @default(now())
+
+  vaultItem     VaultItem      @relation(fields: [vaultItemId], references: [id], onDelete: Cascade)
+  contact       TrustedContact @relation(fields: [contactId], references: [id], onDelete: Cascade)
+
+  @@unique([vaultItemId, contactId])
+}
+
+model CheckIn {
+  id        String   @id @default(uuid())
+  userId    String
+  timestamp DateTime @default(now())
+  method    String   // "manual", "email_link"
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Release {
+  id            String   @id @default(uuid())
+  userId        String
+  vaultItemId   String
+  contactId     String
+
+  // When the release was triggered
+  triggeredAt   DateTime @default(now())
+
+  // When the email was sent
+  sentAt        DateTime?
+
+  // Release status
+  status        String   @default("pending") // "pending", "sent", "failed"
+
+  user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  vaultItem     VaultItem      @relation(fields: [vaultItemId], references: [id], onDelete: Cascade)
+  contact       TrustedContact @relation(fields: [contactId], references: [id], onDelete: Cascade)
+}

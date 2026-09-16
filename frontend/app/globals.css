@@ -1,0 +1,116 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Inter — primary UI typeface */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
+
+@layer base {
+  :root {
+    --color-bg:        #f7f7f8;
+    --color-bg-card:   #ffffff;
+    --color-surface:   #eeeef0;
+    --color-border:    #d1d1d6;
+    --color-text:      #17171c;
+    --color-text-sec:  #63636e;
+    --color-text-dim:  #81818d;
+    --color-accent:    #486581;
+    --color-accent-fg: #ffffff;
+    --color-safe:      #2e7d4a;
+    --color-warn:      #b8860b;
+    --color-danger:    #c53030;
+  }
+
+  .dark, :root[data-theme="dark"],
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --color-bg:        #0f0f13;
+      --color-bg-card:   #17171c;
+      --color-surface:   #1f1f26;
+      --color-border:    #363640;
+      --color-text:      #eeeef0;
+      --color-text-sec:  #a9a9b2;
+      --color-text-dim:  #81818d;
+      --color-accent:    #829ab1;
+      --color-accent-fg: #0f0f13;
+      --color-safe:      #4ade80;
+      --color-warn:      #fbbf24;
+      --color-danger:    #f87171;
+    }
+  }
+
+  html {
+    font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  body {
+    background-color: var(--color-bg);
+    color: var(--color-text);
+    line-height: 1.6;
+  }
+
+  /* Smooth focus outlines */
+  *:focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 2px;
+  }
+
+  /* Selection color */
+  ::selection {
+    background-color: var(--color-accent);
+    color: var(--color-accent-fg);
+  }
+}
+
+@layer components {
+  /* Shared card style */
+  .gv-card {
+    @apply bg-white dark:bg-vault-900 rounded-xl border border-vault-200 dark:border-vault-700 shadow-card;
+  }
+
+  .gv-card-hover {
+    @apply gv-card transition-shadow duration-200 hover:shadow-card-hover;
+  }
+
+  /* Shared input style */
+  .gv-input {
+    @apply w-full px-3 py-2.5 text-sm bg-white dark:bg-vault-850 border border-vault-200 dark:border-vault-700 rounded-lg text-vault-900 dark:text-vault-100 placeholder:text-vault-400 focus:outline-none focus:ring-2 focus:ring-accent-500/40 focus:border-accent-500 transition-colors;
+  }
+
+  /* Primary button */
+  .gv-btn-primary {
+    @apply inline-flex items-center justify-center gap-2 px-5 py-2.5 text-sm font-semibold rounded-lg bg-accent-600 text-white hover:bg-accent-700 focus:ring-2 focus:ring-accent-500/40 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors;
+  }
+
+  /* Ghost / secondary button */
+  .gv-btn-secondary {
+    @apply inline-flex items-center justify-center gap-2 px-5 py-2.5 text-sm font-medium rounded-lg bg-vault-100 dark:bg-vault-800 text-vault-700 dark:text-vault-200 hover:bg-vault-200 dark:hover:bg-vault-700 border border-vault-200 dark:border-vault-700 transition-colors;
+  }
+
+  /* Danger button */
+  .gv-btn-danger {
+    @apply text-sm font-medium text-danger hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 transition-colors;
+  }
+
+  /* Badge base */
+  .gv-badge {
+    @apply inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium rounded-full;
+  }
+
+  /* Section heading */
+  .gv-section-title {
+    @apply text-lg font-semibold text-vault-900 dark:text-vault-50 flex items-center gap-2;
+  }
+
+  .gv-section-subtitle {
+    @apply text-xs text-vault-500 dark:text-vault-400 mt-0.5;
+  }
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+}
