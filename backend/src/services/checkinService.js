@@ -1,7 +1,6 @@
-import { PrismaClient } from '@prisma/client';
+import prisma from '../lib/prisma.js';
 import { sendCheckinReminder, sendEmergencyReleaseEmail } from './emailService.js';
 
-const prisma = new PrismaClient();
 
 /**
  * Record a manual check-in by the user

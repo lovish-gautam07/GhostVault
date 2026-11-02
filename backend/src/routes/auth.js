@@ -1,11 +1,10 @@
 import express from 'express';
 import { z } from 'zod';
-import { PrismaClient } from '@prisma/client';
+import prisma from '../lib/prisma.js';
 import { hashPassword, comparePassword, generateToken } from '../utils/auth.js';
 import { authenticateToken } from '../middleware/auth.js';
 
 const router = express.Router();
-const prisma = new PrismaClient();
 
 // Password complexity regex: at least 8 chars, 1 uppercase, 1 lowercase, 1 digit
 const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$/;
