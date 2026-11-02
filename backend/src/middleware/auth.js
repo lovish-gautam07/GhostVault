@@ -1,7 +1,6 @@
 import { verifyToken } from '../utils/auth.js';
-import { PrismaClient } from '@prisma/client';
+import prisma from '../lib/prisma.js';
 
-const prisma = new PrismaClient();
 
 /**
  * Middleware to authenticate requests using JWT
