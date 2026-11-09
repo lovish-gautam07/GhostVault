@@ -1,5 +1,6 @@
 import './globals.css'
 import type { Metadata } from 'next'
+import ChatWidget from '@/components/ChatWidget'
 
 export const metadata: Metadata = {
   title: 'GhostVault — Encrypted Digital Legacy Manager',
@@ -15,6 +16,7 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <body className="min-h-screen bg-vault-50 dark:bg-vault-950 text-vault-900 dark:text-vault-100 antialiased">
         {children}
+        <ChatWidget />
       </body>
     </html>
   )

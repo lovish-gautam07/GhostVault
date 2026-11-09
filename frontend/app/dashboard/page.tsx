@@ -7,6 +7,7 @@ import CheckInCard from '@/components/CheckInCard'
 import ContactsList from '@/components/ContactsList'
 import VaultItemList from '@/components/VaultItemList'
 import AddVaultItemModal from '@/components/AddVaultItemModal'
+import AiToolsPanel from '@/components/AiToolsPanel'
 import { vaultApi, contactApi, checkinApi } from '@/lib/api'
 import { Shield, Plus, ShieldLock } from '@/components/Icons'
 
@@ -115,6 +116,9 @@ export default function DashboardPage() {
 
           <VaultItemList items={vaultItems} onRefresh={loadDashboardData} />
         </div>
+
+        {/* AI Security Tools */}
+        <AiToolsPanel />
       </main>
 
       <footer className="border-t border-vault-200 dark:border-vault-800 py-6 text-center text-xs text-vault-400 font-mono">

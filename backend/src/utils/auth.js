@@ -12,6 +12,9 @@ function getJwtSecret() {
     // Safe dev/test secret with explicit logged warning
     return 'ghostvault-local-development-secret-key-32chars!';
   }
+  if (process.env.NODE_ENV === 'production' && secret.length < 32) {
+    throw new Error('CRITICAL SECURITY ERROR: JWT_SECRET must be at least 32 characters in production.');
+  }
   return secret;
 }
 
@@ -36,7 +39,7 @@ export async function comparePassword(password, hashedPassword) {
  */
 export function generateToken(userId) {
   const secret = getJwtSecret();
-  return jwt.sign({ userId }, secret, { expiresIn: JWT_EXPIRES_IN });
+  return jwt.sign({ userId }, secret, { expiresIn: JWT_EXPIRES_IN, algorithm: 'HS256' });
 }
 
 /**
@@ -46,7 +49,8 @@ export function generateToken(userId) {
 export function verifyToken(token) {
   try {
     const secret = getJwtSecret();
-    return jwt.verify(token, secret);
+    // Pin the algorithm to block algorithm-confusion attacks
+    return jwt.verify(token, secret, { algorithms: ['HS256'] });
   } catch (error) {
     return null;
   }

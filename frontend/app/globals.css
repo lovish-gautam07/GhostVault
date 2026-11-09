@@ -1,9 +1,10 @@
+/* Inter — primary UI typeface */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* Inter — primary UI typeface */
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
 
 @layer base {
   :root {
@@ -21,7 +22,21 @@
     --color-danger:    #c53030;
   }
 
-  .dark, :root[data-theme="dark"],
+  .dark, :root[data-theme="dark"] {
+    --color-bg:      #0f0f13;
+    --color-bg-card:   #17171c;
+    --color-surface:   #1f1f26;
+    --color-border:    #363640;
+    --color-text:    #eeeef0;
+    --color-text-sec:  #a9a9b2;
+    --color-text-dim:  #81818d;
+    --color-accent:    #829ab1;
+    --color-accent-fg: #0f0f13;
+    --color-safe:    #4ade80;
+    --color-warn:    #fbbf24;
+    --color-danger:    #f87171;
+  }
+
   @media (prefers-color-scheme: dark) {
     :root:not([data-theme="light"]) {
       --color-bg:        #0f0f13;

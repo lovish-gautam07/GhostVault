@@ -7,10 +7,10 @@ services:
     restart: unless-stopped
     environment:
       POSTGRES_USER: ghostvault
-      POSTGRES_PASSWORD: ghostvault_secret_password
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in a .env file next to docker-compose.yml}
       POSTGRES_DB: ghostvault
     ports:
-      - "5432:5432"
+      - "127.0.0.1:5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
 
@@ -25,8 +25,9 @@ services:
     environment:
       NODE_ENV: production
       PORT: 3001
-      DATABASE_URL: "postgresql://ghostvault:ghostvault_secret_password@postgres:5432/ghostvault?schema=public"
-      JWT_SECRET: "development-jwt-super-secret-key-min-32-chars-long"
+      DATABASE_URL: "postgresql://ghostvault:${POSTGRES_PASSWORD}@postgres:5432/ghostvault?schema=public"
+      JWT_SECRET: ${JWT_SECRET:?Set JWT_SECRET (32+ random chars) in a .env file}
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
       FRONTEND_URL: "http://localhost:3000"
       SMTP_HOST: "smtp.ethereal.email"
       SMTP_PORT: 587
