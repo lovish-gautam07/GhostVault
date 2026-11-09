@@ -4,7 +4,8 @@ import { useState } from 'react'
 import { vaultApi } from '@/lib/api'
 import { deriveKey, encryptPayload } from '@/lib/crypto'
 import type { Contact } from './ContactsList'
-import { ShieldLock, X, Lock } from './Icons'
+import { ShieldLock, X, Lock, Sparkles } from './Icons'
+import LetterWriter from './LetterWriter'
 
 interface Props {
   isOpen: boolean
@@ -21,6 +22,7 @@ export default function AddVaultItemModal({ isOpen, onClose, onSuccess, contacts
   const [selectedContactIds, setSelectedContactIds] = useState<string[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [showLetterWriter, setShowLetterWriter] = useState(false)
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -58,6 +60,7 @@ export default function AddVaultItemModal({ isOpen, onClose, onSuccess, contacts
       setPlainData('')
       setReleaseTier(30)
       setSelectedContactIds([])
+      setShowLetterWriter(false)
       onSuccess()
       onClose()
     } catch (err: any) {
@@ -151,10 +154,33 @@ export default function AddVaultItemModal({ isOpen, onClose, onSuccess, contacts
               <label className="block text-xs font-medium text-vault-700 dark:text-vault-300">
                 Payload / Sensitive Data
               </label>
-              <span className="text-[11px] font-mono text-vault-400 flex items-center gap-1">
-                <Lock size={10} /> Encrypted client-side
-              </span>
+              <div className="flex items-center gap-3">
+                {type === 'note' && !showLetterWriter && (
+                  <button
+                    type="button"
+                    onClick={() => setShowLetterWriter(true)}
+                    className="text-[11px] font-medium text-accent-600 dark:text-accent-400 hover:underline flex items-center gap-1"
+                  >
+                    <Sparkles size={11} /> AI Letter Writer
+                  </button>
+                )}
+                <span className="text-[11px] font-mono text-vault-400 flex items-center gap-1">
+                  <Lock size={10} /> Encrypted client-side
+                </span>
+              </div>
             </div>
+            {type === 'note' && showLetterWriter && (
+              <div className="mb-2">
+                <LetterWriter
+                  initialDraft={plainData}
+                  onUse={(letter) => {
+                    setPlainData(letter)
+                    setShowLetterWriter(false)
+                  }}
+                  onClose={() => setShowLetterWriter(false)}
+                />
+              </div>
+            )}
             <textarea
               required
               value={plainData}

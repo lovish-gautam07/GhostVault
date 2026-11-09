@@ -79,7 +79,7 @@ router.post('/signup', async (req, res, next) => {
     if (error instanceof z.ZodError) {
       return res.status(400).json({
         error: 'Validation failed',
-        details: error.errors.map(e => ({ field: e.path.join('.'), message: e.message }))
+        details: error.issues.map(e => ({ field: e.path.join('.'), message: e.message }))
       });
     }
     next(error);
@@ -124,7 +124,7 @@ router.post('/login', async (req, res, next) => {
     if (error instanceof z.ZodError) {
       return res.status(400).json({
         error: 'Validation failed',
-        details: error.errors.map(e => ({ field: e.path.join('.'), message: e.message }))
+        details: error.issues.map(e => ({ field: e.path.join('.'), message: e.message }))
       });
     }
     next(error);

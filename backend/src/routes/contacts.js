@@ -61,7 +61,7 @@ router.post('/', async (req, res, next) => {
     if (error instanceof z.ZodError) {
       return res.status(400).json({
         error: 'Validation failed',
-        details: error.errors
+        details: error.issues
       });
     }
     // Handle unique constraint violation
@@ -87,7 +87,7 @@ router.patch('/:id', async (req, res, next) => {
     if (error instanceof z.ZodError) {
       return res.status(400).json({
         error: 'Validation failed',
-        details: error.errors
+        details: error.issues
       });
     }
     if (error.message === 'Contact not found') {

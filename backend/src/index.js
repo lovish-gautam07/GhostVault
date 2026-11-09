@@ -8,6 +8,7 @@ import vaultRoutes from './routes/vault.js';
 import contactRoutes from './routes/contacts.js';
 import checkinRoutes from './routes/checkin.js';
 import releaseRoutes from './routes/releases.js';
+import aiRoutes from './routes/ai.js';
 import { errorHandler, notFoundHandler } from './middleware/errorHandler.js';
 import { initializeCronJobs } from './jobs/scheduler.js';
 
@@ -16,6 +17,13 @@ dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 3001;
+
+// Behind Render/other reverse proxies: trust the first hop so rate limiting
+// keys on the real client IP instead of the proxy's IP.
+if (process.env.NODE_ENV === 'production') {
+  app.set('trust proxy', 1);
+}
+app.disable('x-powered-by');
 
 // 1. Security Headers via Helmet
 app.use(
@@ -103,6 +111,7 @@ app.use('/api/vault', vaultRoutes);
 app.use('/api/contacts', contactRoutes);
 app.use('/api/checkin', checkinRoutes);
 app.use('/api/releases', releaseRoutes);
+app.use('/api/ai', aiRoutes);
 
 // 7. Error handling
 app.use(notFoundHandler);

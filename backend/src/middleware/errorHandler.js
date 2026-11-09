@@ -32,7 +32,7 @@ export function errorHandler(err, req, res, _next) {
   if (err.name === 'ZodError') {
     return res.status(400).json({
       error: 'Validation failed',
-      details: err.errors ? err.errors.map(e => ({ field: e.path.join('.'), message: e.message })) : err.message
+      details: err.issues ? err.issues.map(e => ({ field: e.path.join('.'), message: e.message })) : err.message
     });
   }
 

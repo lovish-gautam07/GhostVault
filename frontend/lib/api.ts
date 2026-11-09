@@ -84,3 +84,17 @@ export const checkinApi = {
 export const releaseApi = {
   get: (id: string) => request(`/releases/${id}`),
 };
+
+// AI API (Gemini runs server-side; the API key never reaches the browser)
+export type ChatMessage = { role: 'user' | 'assistant'; content: string }
+
+export const aiApi = {
+  status: () => request('/ai/status'),
+  chat: (messages: ChatMessage[]) =>
+    request('/ai/chat', { method: 'POST', body: JSON.stringify({ messages }) }),
+  letter: (data: { draft: string; recipientName?: string; relationship?: string; tone: string }) =>
+    request('/ai/letter', { method: 'POST', body: JSON.stringify(data) }),
+  advisor: () => request('/ai/advisor'),
+  passwordTips: (features: object) =>
+    request('/ai/password-tips', { method: 'POST', body: JSON.stringify(features) }),
+}
