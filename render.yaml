@@ -47,6 +47,13 @@ services:
       - key: EMAIL_FROM
         value: "GhostVault Security <noreply@ghostvault.com>"
 
+      # AI features (Gemini). Set the key as a secret in the Render dashboard; never commit it.
+      - key: GEMINI_API_KEY
+        sync: false
+
+      - key: GEMINI_MODEL
+        value: gemini-3.1-flash-lite
+
 databases:
   - name: ghostvault-db
     plan: free
