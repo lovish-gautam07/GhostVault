@@ -15,59 +15,53 @@
  */
 
 const GEMINI_BASE_URL = 'https://generativelanguage.googleapis.com/v1beta/models';
-const REQUEST_TIMEOUT_MS = 20000;
+const ATTEMPT_TIMEOUT_MS = 12000; // per model attempt
+const TOTAL_BUDGET_MS = 26000; // across all fallbacks, so users never wait too long
+const DEFAULT_FALLBACK_MODELS = ['gemini-2.5-flash-lite', 'gemini-flash-lite-latest'];
+// Statuses worth trying another model for (busy, rate-limited, retired or temporarily missing)
+const RETRYABLE_STATUSES = new Set([404, 408, 429, 500, 502, 503, 504]);
 
 export function getModel() {
   return process.env.GEMINI_MODEL || 'gemini-3.1-flash-lite';
+}
+
+export function getModelChain() {
+  const fallbacks = process.env.GEMINI_FALLBACK_MODELS
+    ? process.env.GEMINI_FALLBACK_MODELS.split(',').map((m) => m.trim()).filter(Boolean)
+    : DEFAULT_FALLBACK_MODELS;
+  return [...new Set([getModel(), ...fallbacks])];
 }
 
 export function isAiConfigured() {
   return Boolean(process.env.GEMINI_API_KEY && process.env.GEMINI_API_KEY.trim().length > 10);
 }
 
-/**
- * Low-level Gemini call. Returns plain text. Throws a sanitized error on failure.
- * @param {{ system: string, messages: {role: 'user'|'assistant', content: string}[], temperature?: number, maxTokens?: number }} opts
- */
-export async function generateText({ system, messages, temperature = 0.6, maxTokens = 1024 }) {
-  if (!isAiConfigured()) {
-    const err = new Error('AI is not configured');
-    err.code = 'AI_NOT_CONFIGURED';
-    throw err;
-  }
+function upstreamError(code, message) {
+  const err = new Error(message);
+  err.code = code;
+  return err;
+}
 
+async function callModel(model, body, timeoutMs) {
   const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
-
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
   try {
-    const response = await fetch(`${GEMINI_BASE_URL}/${encodeURIComponent(getModel())}:generateContent`, {
+    const response = await fetch(`${GEMINI_BASE_URL}/${encodeURIComponent(model)}:generateContent`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         // Key goes in a header (not the URL) so it never shows up in access logs
         'x-goog-api-key': process.env.GEMINI_API_KEY.trim()
       },
-      body: JSON.stringify({
-        systemInstruction: { parts: [{ text: system }] },
-        contents: messages.map((m) => ({
-          role: m.role === 'assistant' ? 'model' : 'user',
-          parts: [{ text: m.content }]
-        })),
-        generationConfig: { temperature, maxOutputTokens: maxTokens },
-        safetySettings: [
-          { category: 'HARM_CATEGORY_HARASSMENT', threshold: 'BLOCK_MEDIUM_AND_ABOVE' },
-          { category: 'HARM_CATEGORY_HATE_SPEECH', threshold: 'BLOCK_MEDIUM_AND_ABOVE' },
-          { category: 'HARM_CATEGORY_DANGEROUS_CONTENT', threshold: 'BLOCK_MEDIUM_AND_ABOVE' }
-        ]
-      }),
+      body,
       signal: controller.signal
     });
 
     if (!response.ok) {
-      // Do not forward upstream error bodies (could contain request details)
-      console.error(`[AI] Gemini request failed with status ${response.status}`);
-      const err = new Error('AI provider request failed');
-      err.code = 'AI_UPSTREAM_ERROR';
+      // Do not forward or log upstream error bodies (could contain request details)
+      console.error(`[AI] Gemini model ${model} failed with status ${response.status}`);
+      const err = upstreamError('AI_UPSTREAM_ERROR', 'AI provider request failed');
+      err.retryable = RETRYABLE_STATUSES.has(response.status);
       throw err;
     }
 
@@ -78,25 +72,65 @@ export async function generateText({ system, messages, temperature = 0.6, maxTok
       .trim();
 
     if (!text) {
-      const err = new Error('AI returned an empty response');
-      err.code = 'AI_EMPTY';
+      console.error(`[AI] Gemini model ${model} returned an empty response`);
+      const err = upstreamError('AI_EMPTY', 'AI returned an empty response');
+      err.retryable = true;
       throw err;
     }
     return text;
   } catch (error) {
     if (error.name === 'AbortError') {
-      const err = new Error('AI request timed out');
-      err.code = 'AI_TIMEOUT';
+      console.error(`[AI] Gemini model ${model} timed out after ${timeoutMs}ms`);
+      const err = upstreamError('AI_TIMEOUT', 'AI request timed out');
+      err.retryable = true;
       throw err;
     }
     if (error.code) throw error;
-    console.error('[AI] Gemini request error:', error.message);
-    const err = new Error('AI provider request failed');
-    err.code = 'AI_UPSTREAM_ERROR';
+    console.error(`[AI] Gemini model ${model} request error:`, error.message);
+    const err = upstreamError('AI_UPSTREAM_ERROR', 'AI provider request failed');
+    err.retryable = true;
     throw err;
   } finally {
     clearTimeout(timer);
   }
+}
+
+/**
+ * Low-level Gemini call with model fallback. Returns plain text. Throws a sanitized error on failure.
+ * @param {{ system: string, messages: {role: 'user'|'assistant', content: string}[], temperature?: number, maxTokens?: number }} opts
+ */
+export async function generateText({ system, messages, temperature = 0.6, maxTokens = 1024 }) {
+  if (!isAiConfigured()) {
+    throw upstreamError('AI_NOT_CONFIGURED', 'AI is not configured');
+  }
+
+  const body = JSON.stringify({
+    systemInstruction: { parts: [{ text: system }] },
+    contents: messages.map((m) => ({
+      role: m.role === 'assistant' ? 'model' : 'user',
+      parts: [{ text: m.content }]
+    })),
+    generationConfig: { temperature, maxOutputTokens: maxTokens },
+    safetySettings: [
+      { category: 'HARM_CATEGORY_HARASSMENT', threshold: 'BLOCK_MEDIUM_AND_ABOVE' },
+      { category: 'HARM_CATEGORY_HATE_SPEECH', threshold: 'BLOCK_MEDIUM_AND_ABOVE' },
+      { category: 'HARM_CATEGORY_DANGEROUS_CONTENT', threshold: 'BLOCK_MEDIUM_AND_ABOVE' }
+    ]
+  });
+
+  const deadline = Date.now() + TOTAL_BUDGET_MS;
+  let lastError;
+  for (const model of getModelChain()) {
+    const remaining = deadline - Date.now();
+    if (remaining < 2000) break;
+    try {
+      return await callModel(model, body, Math.min(ATTEMPT_TIMEOUT_MS, remaining));
+    } catch (error) {
+      lastError = error;
+      if (!error.retryable) break; // e.g. invalid key: other models will fail the same way
+    }
+  }
+  throw lastError || upstreamError('AI_UPSTREAM_ERROR', 'AI provider request failed');
 }
 
 // ---------------------------------------------------------------------------

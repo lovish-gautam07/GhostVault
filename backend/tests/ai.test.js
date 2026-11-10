@@ -80,6 +80,32 @@ describe('AI Service', () => {
     spy.mockRestore();
   });
 
+  test('falls back to the next model when the first is busy (503)', async () => {
+    process.env.GEMINI_API_KEY = 'test-key-1234567890';
+    global.fetch = jest
+      .fn()
+      .mockResolvedValueOnce({ ok: false, status: 503, json: async () => ({}) })
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ candidates: [{ content: { parts: [{ text: 'From fallback' }] } }] })
+      });
+    const spy = jest.spyOn(console, 'error').mockImplementation(() => {});
+    const res = await chat([{ role: 'user', content: 'hi' }]);
+    expect(res).toEqual({ reply: 'From fallback', source: 'ai' });
+    expect(global.fetch).toHaveBeenCalledTimes(2);
+    expect(global.fetch.mock.calls[0][0]).not.toBe(global.fetch.mock.calls[1][0]);
+    spy.mockRestore();
+  });
+
+  test('does not try other models when the key is rejected (403)', async () => {
+    process.env.GEMINI_API_KEY = 'test-key-1234567890';
+    global.fetch = jest.fn().mockResolvedValue({ ok: false, status: 403, json: async () => ({}) });
+    const spy = jest.spyOn(console, 'error').mockImplementation(() => {});
+    await chat([{ role: 'user', content: 'hi' }]);
+    expect(global.fetch).toHaveBeenCalledTimes(1);
+    spy.mockRestore();
+  });
+
   test('advisor: healthy setup scores high', () => {
     const r = analyzeVaultMetadata(baseMeta);
     expect(r.score).toBeGreaterThanOrEqual(90);
