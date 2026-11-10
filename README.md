@@ -170,7 +170,7 @@ GhostVault is ready for zero-downtime production deployment across cloud PaaS an
 - **Cloud PaaS**: Next.js frontend on [Vercel](https://vercel.com), Node.js Express API and PostgreSQL on [Render](https://render.com) (using `render.yaml`).
 - **Docker / Self-Hosted**: Multi-stage `Dockerfile` configurations and `docker-compose.yml` for unified VPS deployment (DigitalOcean, AWS EC2, Hetzner).
 - **Deployment Guide**: See [DEPLOYMENT.md](./DEPLOYMENT.md) for step-by-step instructions.
-- **AI in production**: add `GEMINI_API_KEY` (and optionally `GEMINI_MODEL`, default `gemini-2.5-flash`) as a secret environment variable on the API service in the Render dashboard.
+- **AI in production**: add `GEMINI_API_KEY` (and optionally `GEMINI_MODEL`, default `gemini-3.1-flash-lite`) as a secret environment variable on the API service in the Render dashboard.
 
 ## License
 
