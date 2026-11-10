@@ -18,7 +18,7 @@ const GEMINI_BASE_URL = 'https://generativelanguage.googleapis.com/v1beta/models
 const REQUEST_TIMEOUT_MS = 20000;
 
 export function getModel() {
-  return process.env.GEMINI_MODEL || 'gemini-2.5-flash';
+  return process.env.GEMINI_MODEL || 'gemini-3.1-flash-lite';
 }
 
 export function isAiConfigured() {
