@@ -1,0 +1,48 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      DATABASE_URL: file:./ci.db
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: npm
+
+      - run: npm ci
+      - name: Prepare the SQLite test database
+        working-directory: backend
+        run: |
+          npx prisma generate
+          npx prisma db push --skip-generate
+      - name: Tests (Jest)
+        run: npm run test:backend
+
+  frontend:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: npm
+
+      - run: npm ci
+      - run: npm run lint --workspace=frontend
+      - run: npm run build --workspace=frontend
+        env:
+          NEXT_PUBLIC_API_URL: http://localhost:3001/api
